@@ -39,7 +39,7 @@ This project was bootstrapped with [Create React App](https://github.com/faceboo
 Clone the repo and install dependencies:
 
 ```bash
-git clone https://github.com/your-username/n-back.git
+git clone https://github.com/VishalJeyaram/n-back.git
 cd n-back
 npm install
 ```
