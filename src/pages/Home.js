@@ -1,16 +1,11 @@
-import React, { useState } from 'react';
-import './styles/Home.css';
-import Slider from '@mui/material/Slider';
+// src/pages/Home.js
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import Slider from '@mui/material/Slider';
+import './styles/Home.css';
 
-const marks = Array.from({ length: 10 }, (_, i) => ({
-  value: i,
-  label: `${i}`
-}));
-
-function valuetext(value) {
-  return `${value}`;
-}
+const marks = Array.from({ length: 10 }, (_, i) => ({ value: i, label: `${i}` }));
+function valuetext(value) { return `${value}`; }
 
 function nDescription(n) {
   switch (n) {
@@ -24,8 +19,7 @@ function nDescription(n) {
     case 7: return "Ah yes, 7-back. Where dreams go to die.";
     case 8: return "At this point, you’re not playing the game. The game is playing you.";
     case 9: return "9? You okay? Blink twice if you need help.";
-    case null: return " ddikdkdk"
-    default: return " HELLO";
+    default: return "";
   }
 }
 
@@ -35,29 +29,40 @@ function Home() {
   const [questionCount, setQuestionCount] = useState(null);
   const [timing, setTiming] = useState(null);
   const [operations, setOperations] = useState([]);
-
-
+  const [opsHoverReady, setOpsHoverReady] = useState({});
   const navigate = useNavigate();
+
+  useEffect(() => {
+    setOpsHoverReady(prev => {
+      const next = {};
+      operations.forEach(op => {
+        next[op] = prev[op] || false;
+      });
+      return next;
+    });
+  }, [operations]);
+
+  const toggleOp = (op) => {
+    setOperations(prev =>
+      prev.includes(op) ? prev.filter(o => o !== op) : [...prev, op]
+    );
+    setOpsHoverReady(prev => ({ ...prev, [op]: false }));
+  };
 
   const handleStartGame = () => {
     navigate('/game', {
-      state: {
-        nValue,
-        mode,
-        questionCount,
-        timing,
-        operations, 
-      },
+      state: { nValue, mode, questionCount, timing, operations },
     });
   };
-
 
   return (
     <div className="home-container">
       <h1 className="home-title">n-back</h1>
-      <p className="home-subtitle">A cursed game that will test the limits of your memory.</p>
+      <p className="home-subtitle">
+        A cursed game that will test the limits of your memory.
+      </p>
 
-      {nValue == null && <h3 className="section-heading">Select n-value</h3>}
+      <h3 className="section-heading">Select n-value</h3>
       <div className="slider-container">
         <Slider
           aria-label="N Value"
@@ -68,11 +73,19 @@ function Home() {
           marks={marks}
           min={0}
           max={9}
-          color="black"
+          sx={{
+            height: 10,
+            '& .MuiSlider-track': { height: 10 },
+            '& .MuiSlider-rail':  { height: 10 },
+            '& .MuiSlider-thumb': { width: 24, height: 24 },
+          }}
+          color='black'
         />
       </div>
 
-      {nValue !== null && (
+      {nValue === null ? (
+        <p className="n-description">Choose wisely my friend</p>
+      ) : (
         <>
           <p className="n-label">n = {nValue}</p>
           <p className="n-description">{nDescription(nValue)}</p>
@@ -83,82 +96,74 @@ function Home() {
         <div>
           <h3 className="section-heading">Select Mode</h3>
           <div className="button-group">
-            <button
-              className={`mode-button ${mode === 'Untimed' ? 'selected' : ''}`}
-              onClick={() => {
-                setMode('Untimed');
-                setTiming(null);
-              }}
-            >
-              No Time Limit 
-            </button>
-            <button
-              className={`mode-button ${mode === 'Timed' ? 'selected' : ''}`}
-              onClick={() => {
-                setMode('Timed');
-                setQuestionCount(null);
-              }}
-            >
-              Time Limit
-            </button>
+            {['Untimed', 'Timed'].map(m => (
+              <button
+                key={m}
+                className={`mode-button ${mode === m ? 'selected' : ''}`}
+                onClick={() => {
+                  setMode(m);
+                  if (m === 'Untimed') setTiming(null);
+                  else setQuestionCount(null);
+                }}
+              >
+                {m === 'Untimed' ? 'No Time Limit' : 'Time Limit'}
+              </button>
+            ))}
           </div>
         </div>
 
-{mode && (
-  <div>
-    <h3 className="section-heading">
-      {mode === 'Untimed' ? 'Number of Questions' : 'Game Duration'}
-    </h3>
+        {mode && (
+          <div>
+            <h3 className="section-heading">
+              {mode === 'Untimed' ? 'Number of Questions' : 'Game Duration'}
+            </h3>
+            <div className="button-group">
+              {(mode === 'Untimed' ? [15, 30, 45] : [60000, 300000, 600000]).map(val => {
+                const isTime = mode === 'Timed';
+                const selected = isTime ? timing === val : questionCount === val;
+                return (
+                  <button
+                    key={val}
+                    className={`mode-button ${selected ? 'selected' : ''}`}
+                    onClick={() => isTime ? setTiming(val) : setQuestionCount(val)}
+                  >
+                    {isTime ? `${val / 60000} min` : val}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
-    <div className="button-group">
-      {mode === 'Untimed'
-        ? [15, 30, 45].map(count => (
-            <button
-              key={count}
-              className={`mode-button ${questionCount === count ? 'selected' : ''}`}
-              onClick={() => setQuestionCount(count)}
-            >
-              {count} 
-            </button>
-          ))
-        : [60000, 300000, 600000].map(time => (
-            <button
-              key={time}
-              className={`mode-button ${timing === time ? 'selected' : ''}`}
-              onClick={() => setTiming(time)}
-            >
-              {time / 60000} min
-            </button>
-          ))}
-    </div>
-  </div>
-)}
-
-
-{mode && (
-  <div>
-    <h3 className="section-heading">Types of Operations</h3>
-
-    <div className="button-group">
-      {['+', '-', '÷', '×'].map(op => (
-        <button
-          key={op}
-          className={`mode-button ${operations.includes(op) ? 'selected' : ''}`}
-          onClick={() => {
-            setOperations(prev =>
-              prev.includes(op)
-                ? prev.filter(o => o !== op) // deselect
-                : [...prev, op] // select
-            );
-          }}
-        >
-          {op}
-        </button>
-      ))}
-    </div>
-  </div>
-)}
-
+        {mode && (
+          <div className="operations-group">
+            <h3 className="section-heading">Types of Operations</h3>
+            <div className="button-group">
+              {['+', '-', '÷', '×'].map(op => {
+                const selected = operations.includes(op);
+                const hoverReady = opsHoverReady[op];
+                return (
+                  <button
+                    key={op}
+                    className={[
+                      'mode-button',
+                      selected && 'selected',
+                      selected && hoverReady && 'deselect-hover'
+                    ].filter(Boolean).join(' ')}
+                    onClick={() => toggleOp(op)}
+                    onMouseLeave={() => {
+                      if (selected) {
+                        setOpsHoverReady(prev => ({ ...prev, [op]: true }));
+                      }
+                    }}
+                  >
+                    {op}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
       </div>
 
       <button
@@ -167,8 +172,9 @@ function Home() {
         disabled={
           nValue === null ||
           mode === null ||
-          (mode === "Untimed" && questionCount === null) ||
-          (mode === "Timed" && timing === null)
+          (mode === 'Untimed' && questionCount === null) ||
+          (mode === 'Timed' && timing === null) ||
+          operations.length === 0    
         }
       >
         Start Game
